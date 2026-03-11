@@ -418,24 +418,31 @@ app.get('/api/identity',
 
 // ── Payment mode (testnet) ────────────────────────────────────────────────────
 if (ETH_PRIVATE_KEY) {
-  app.get('/api/paid',
-    intmax402({
-      mode: 'payment',
-      secret: SECRET,
-      amount: '1000',
-      environment: INTMAX_ENV,
-      ethPrivateKey: ETH_PRIVATE_KEY,
-    }),
-    (req, res) => {
-      res.json({
-        message: '✅ Payment verified!',
-        paidBy: req.intmax402?.address,
-        txHash: req.intmax402?.txHash,
-        timestamp: new Date().toISOString(),
-        note: 'Your INTMAX L2 payment was verified on-chain',
-      })
-    }
-  )
+  const paymentMiddleware = intmax402({
+    mode: 'payment',
+    secret: SECRET,
+    amount: '1000',
+    environment: INTMAX_ENV,
+    ethPrivateKey: ETH_PRIVATE_KEY,
+  })
+
+  app.get('/api/paid', (req, res, next) => {
+    paymentMiddleware(req, res, next)
+  }, (req, res) => {
+    res.json({
+      message: '✅ Payment verified!',
+      paidBy: req.intmax402?.address,
+      txHash: req.intmax402?.txHash,
+      timestamp: new Date().toISOString(),
+      note: 'Your INTMAX L2 payment was verified on-chain',
+    })
+  })
+
+  // Catch unhandled promise rejections from SDK init (prevent crash)
+  process.on('unhandledRejection', (err) => {
+    console.error('[intmax402] Unhandled rejection (non-fatal):', err?.message || err)
+  })
+
   console.log('Payment mode enabled (environment: ' + INTMAX_ENV + ')')
 } else {
   app.get('/api/paid', (_req, res) => {

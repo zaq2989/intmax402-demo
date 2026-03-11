@@ -16,6 +16,7 @@ const PORT = process.env.PORT || 3000
 const SECRET = process.env.INTMAX402_SECRET || 'demo-secret-do-not-use-in-production'
 const ETH_PRIVATE_KEY = process.env.SERVER_PRIVATE_KEY
 const INTMAX_ENV = process.env.INTMAX_ENV || 'testnet'
+const L1_RPC_URL = process.env.L1_RPC_URL
 
 // ── Trust Railway reverse proxy ───────────────────────────────────────────────
 app.set('trust proxy', 1)
@@ -424,6 +425,7 @@ if (ETH_PRIVATE_KEY) {
     amount: '1000',
     environment: INTMAX_ENV,
     ethPrivateKey: ETH_PRIVATE_KEY,
+    l1RpcUrl: L1_RPC_URL,
   })
 
   app.get('/api/paid', (req, res, next) => {

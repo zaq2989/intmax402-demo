@@ -17,6 +17,9 @@ const SECRET = process.env.INTMAX402_SECRET || 'demo-secret-do-not-use-in-produc
 const ETH_PRIVATE_KEY = process.env.SERVER_PRIVATE_KEY
 const INTMAX_ENV = process.env.INTMAX_ENV || 'testnet'
 
+// ── Trust Railway reverse proxy ───────────────────────────────────────────────
+app.set('trust proxy', 1)
+
 // ── Security headers (XSS, HSTS, content-type sniffing, etc.) ────────────────
 app.use(helmet())
 

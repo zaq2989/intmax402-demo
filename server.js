@@ -14,6 +14,8 @@ import { intmax402 } from '@tanakayuto/intmax402-express'
 const app = express()
 const PORT = process.env.PORT || 3000
 const SECRET = process.env.INTMAX402_SECRET || 'demo-secret-do-not-use-in-production'
+const ETH_PRIVATE_KEY = process.env.SERVER_PRIVATE_KEY
+const INTMAX_ENV = process.env.INTMAX_ENV || 'testnet'
 
 // ── Security headers (XSS, HSTS, content-type sniffing, etc.) ────────────────
 app.use(helmet())
@@ -345,6 +347,12 @@ app.get('/', (req, res) => {
             <span class="desc">Requires wallet proof <span class="auth-badge">401 challenge</span></span>
           </div>
 
+          <div class="endpoint">
+            <span class="method">GET</span>
+            <code>/api/paid</code>
+            <span class="desc">Requires INTMAX L2 payment <span class="auth-badge">402 challenge</span></span>
+          </div>
+
         </div>
       </div>
     </section>
@@ -379,6 +387,7 @@ app.get('/', (req, res) => {
       endpoints: {
         '/api/free': 'No auth required',
         '/api/identity': 'Requires INTMAX402 identity proof (wallet ownership)',
+        '/api/paid': 'Requires INTMAX L2 payment (testnet, 1000 units)',
       },
     })
   }
@@ -403,6 +412,36 @@ app.get('/api/identity',
     })
   }
 )
+
+// ── Payment mode (testnet) ────────────────────────────────────────────────────
+if (ETH_PRIVATE_KEY) {
+  app.get('/api/paid',
+    intmax402({
+      mode: 'payment',
+      secret: SECRET,
+      amount: '1000',
+      environment: INTMAX_ENV,
+      ethPrivateKey: ETH_PRIVATE_KEY,
+    }),
+    (req, res) => {
+      res.json({
+        message: '✅ Payment verified!',
+        paidBy: req.intmax402?.address,
+        txHash: req.intmax402?.txHash,
+        timestamp: new Date().toISOString(),
+        note: 'Your INTMAX L2 payment was verified on-chain',
+      })
+    }
+  )
+  console.log('Payment mode enabled (environment: ' + INTMAX_ENV + ')')
+} else {
+  app.get('/api/paid', (_req, res) => {
+    res.status(503).json({
+      error: 'Payment mode not configured',
+      hint: 'SERVER_PRIVATE_KEY environment variable is required',
+    })
+  })
+}
 
 app.listen(PORT, () => {
   console.log(`intmax402 demo server running on port ${PORT}`)

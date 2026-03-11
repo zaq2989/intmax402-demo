@@ -16,7 +16,14 @@ const PORT = process.env.PORT || 3000
 const SECRET = process.env.INTMAX402_SECRET || 'demo-secret-do-not-use-in-production'
 const ETH_PRIVATE_KEY = process.env.SERVER_PRIVATE_KEY
 const INTMAX_ENV = process.env.INTMAX_ENV || 'testnet'
-const L1_RPC_URL = process.env.L1_RPC_URL
+const PAYMENT_AMOUNT = process.env.PAYMENT_AMOUNT || '1000'
+
+// Auto-derive L1 RPC URL from environment if not explicitly set
+const DEFAULT_L1_RPC = {
+  mainnet: 'https://api.rpc.intmax.io?network=ethereum',
+  testnet: 'https://sepolia.gateway.tenderly.co',
+}
+const L1_RPC_URL = process.env.L1_RPC_URL || DEFAULT_L1_RPC[INTMAX_ENV] || DEFAULT_L1_RPC.testnet
 
 // ── Trust Railway reverse proxy ───────────────────────────────────────────────
 app.set('trust proxy', 1)
@@ -354,7 +361,7 @@ app.get('/', (req, res) => {
           <div class="endpoint">
             <span class="method">GET</span>
             <code>/api/paid</code>
-            <span class="desc">Requires INTMAX L2 payment <span class="auth-badge">402 challenge</span></span>
+            <span class="desc">Requires INTMAX L2 payment (${INTMAX_ENV}) <span class="auth-badge">402 challenge</span></span>
           </div>
 
         </div>
@@ -391,7 +398,7 @@ app.get('/', (req, res) => {
       endpoints: {
         '/api/free': 'No auth required',
         '/api/identity': 'Requires INTMAX402 identity proof (wallet ownership)',
-        '/api/paid': 'Requires INTMAX L2 payment (testnet, 1000 units)',
+        [`/api/paid`]: `Requires INTMAX L2 payment (${INTMAX_ENV}, ${PAYMENT_AMOUNT} units)`,
       },
     })
   }
@@ -417,12 +424,12 @@ app.get('/api/identity',
   }
 )
 
-// ── Payment mode (testnet) ────────────────────────────────────────────────────
+// ── Payment mode (testnet / mainnet via INTMAX_ENV) ───────────────────────────
 if (ETH_PRIVATE_KEY) {
   const paymentMiddleware = intmax402({
     mode: 'payment',
     secret: SECRET,
-    amount: '1000',
+    amount: PAYMENT_AMOUNT,
     environment: INTMAX_ENV,
     ethPrivateKey: ETH_PRIVATE_KEY,
     l1RpcUrl: L1_RPC_URL,
